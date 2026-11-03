@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Gestão de agendamentos de procedimentos da clínica odontológica.">
+  <meta name="theme-color" content="#0f5c55">
+  <title>Agenda | Clínica Odontológica</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="menu" aria-label="Principal">
+      <a class="menu__marca" href="#/agenda">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="currentColor" d="M12 5.2C10.6 4.2 9 3.5 7.3 3.5 4.6 3.5 3 5.7 3 8.4c0 2 .7 3.4 1.3 5 .6 1.7.7 3.5 1.2 5.3.3 1.1.8 1.8 1.6 1.8 1 0 1.4-1 1.7-2.2.4-1.5.7-3.5 3.2-3.5s2.8 2 3.2 3.5c.3 1.2.7 2.2 1.7 2.2.8 0 1.3-.7 1.6-1.8.5-1.8.6-3.6 1.2-5.3.6-1.6 1.3-3 1.3-5 0-2.7-1.6-4.9-4.3-4.9-1.7 0-3.3.7-4.7 1.7Z"/></svg>
+        <span>Clínica Odontológica</span>
+      </a>
+      <ul class="menu__lista">
+        <li><a href="#/agenda" data-rota="agenda">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M7 3v3m10-3v3M4 9.5h16M5.5 5h13A1.5 1.5 0 0 1 20 6.5v12a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-12A1.5 1.5 0 0 1 5.5 5Z"/></svg>
+          <span>Agenda</span></a></li>
+        <li><a href="#/pacientes" data-rota="pacientes">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7.5 8c.8-3.5 3.8-5.5 7.5-5.5s6.7 2 7.5 5.5"/></svg>
+          <span>Pacientes</span></a></li>
+        <li><a href="#/procedimentos" data-rota="procedimentos">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 5h6m-6 0a1.5 1.5 0 0 0 0 3h6a1.5 1.5 0 0 0 0-3M9 5H6.5A1.5 1.5 0 0 0 5 6.5v12A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 17.5 5H15M9 12.5h6M9 16h4"/></svg>
+          <span>Procedimentos</span></a></li>
+        <li><a href="#/dentistas" data-rota="dentistas">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-7 9c.6-3.8 3.4-6 7-6s6.4 2.2 7 6m-7-3v3m-1.5-1.5h3"/></svg>
+          <span>Dentistas</span></a></li>
+      </ul>
+      <div class="menu__demo" id="aviso-demo" hidden>
+        <strong>Modo demonstração</strong>
+        <span>Dados fictícios, salvos só neste navegador.</span>
+        <button type="button" class="link" id="redefinir-demo">Restaurar dados</button>
+      </div>
+    </nav>
+
+    <main class="conteudo" id="conteudo" tabindex="-1"></main>
+  </div>
+
+  <dialog class="modal" id="modal" aria-labelledby="modal-titulo">
+    <form id="modal-form">
+      <header class="modal__topo">
+        <h2 id="modal-titulo"></h2>
+        <button type="button" class="btn-icone" data-fechar aria-label="Fechar">&times;</button>
+      </header>
+      <div class="modal__corpo" id="modal-corpo"></div>
+      <p class="modal__erro" id="modal-erro" role="alert" hidden></p>
+      <footer class="modal__rodape">
+        <button type="button" class="btn btn--perigo" id="modal-excluir" hidden>Excluir</button>
+        <span class="espaco"></span>
+        <button type="button" class="btn" data-fechar>Cancelar</button>
+        <button type="submit" class="btn btn--primario" id="modal-salvar">Salvar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="modal modal--pequeno" id="confirmacao" aria-labelledby="confirmacao-texto">
+    <form method="dialog">
+      <div class="modal__corpo"><p id="confirmacao-texto"></p></div>
+      <footer class="modal__rodape">
+        <span class="espaco"></span>
+        <button class="btn" value="nao">Voltar</button>
+        <button class="btn btn--perigo" value="sim" id="confirmacao-acao">Excluir</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div class="avisos" id="avisos" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/mock-data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
