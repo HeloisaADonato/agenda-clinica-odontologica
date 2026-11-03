@@ -2,6 +2,8 @@
 
 Protótipo do front-end para gerenciar agendamentos de procedimentos de uma clínica odontológica. Feito em HTML, CSS e JavaScript puros, sem etapa de build.
 
+**Site no ar:** https://heloisaadonato.github.io/agenda-clinica-odontologica/
+
 ## O que já funciona
 
 - Agenda do dia com uma coluna por dentista, que vira lista no celular
