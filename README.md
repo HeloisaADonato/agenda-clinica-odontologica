@@ -11,10 +11,23 @@ Protótipo do front-end para gerenciar agendamentos de procedimentos de uma clí
 - Bloqueio de dois agendamentos no mesmo horário para o mesmo dentista
 - Filtros por data, dentista e status
 - Cadastros de pacientes, procedimentos e dentistas, com busca
+- Login com senha, troca obrigatória da senha temporária e dois níveis de acesso
+
+## Níveis de acesso
+
+| | Admin master | Admin tradicional |
+| --- | --- | --- |
+| Ver, criar e editar agenda e cadastros | sim | sim |
+| Cancelar agendamentos | sim | sim |
+| Excluir agendamentos e cadastros | sim | não |
+| Gerenciar usuários e senhas | sim | não |
+| Restaurar os dados de demonstração | sim | não |
 
 ## Como rodar
 
-Abra o `index.html` no navegador. Por padrão o site usa o **modo demonstração**: os dados são fictícios e ficam salvos apenas no navegador de quem está testando.
+Abra o `index.html` no navegador. Por padrão o site usa o **modo demonstração**: os dados são fictícios e ficam salvos apenas no navegador de quem está testando, inclusive as senhas alteradas.
+
+Neste modo o login roda no navegador e não protege dados de verdade. A proteção real vem do back-end.
 
 No VS Code, a extensão Live Server recarrega a página a cada alteração.
 
@@ -33,6 +46,7 @@ css/styles.css    Estilos e regras responsivas
 js/config.js      Configuração (modo demonstração, URL da API, horário da clínica)
 js/api.js         Comunicação com o back-end e modo demonstração
 js/mock-data.js   Dados fictícios
+js/usuarios-demo.js  Usuários do modo demonstração (somente hashes)
 js/app.js         Telas e interações
 docs/API.md       Contrato da API para o back-end
 ```

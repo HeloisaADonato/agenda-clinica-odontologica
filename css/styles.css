@@ -116,14 +116,68 @@ button, input, select, textarea { font: inherit; color: inherit; }
   cursor: pointer;
 }
 
+.principal { flex: 1; min-width: 0; }
+
 .conteudo {
-  flex: 1;
-  min-width: 0;
   max-width: 1320px;
   margin-inline: auto;
-  padding: 28px 32px 40px;
+  padding: 12px 32px 40px;
   outline: none;
 }
+
+.sessao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 14px;
+  max-width: 1320px;
+  margin-inline: auto;
+  padding: 12px 32px 0;
+  font-size: 14px;
+}
+
+.sessao__nome { font-weight: 600; overflow-wrap: anywhere; }
+.sessao .link { padding-block: 6px; color: var(--marca); }
+.sessao .link[aria-current="page"] { font-weight: 700; }
+
+.selo {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--marca-clara);
+  color: var(--marca-escura);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- Login ---------- */
+
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 16px;
+  background: var(--marca-escura);
+}
+
+.login__cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(400px, 100%);
+  padding: 28px;
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 28%);
+}
+
+.login__marca { display: flex; align-items: center; gap: 10px; color: var(--marca); font-weight: 600; }
+.login__form, .login__campos { display: flex; flex-direction: column; gap: 12px; }
+.login__form h1 { font-size: 22px; font-weight: 650; }
+.login__form .link { align-self: center; color: var(--marca); }
+.login__texto { color: var(--texto-suave); font-size: 14px; }
+.login .modal__erro { margin: 0; }
 
 .topo {
   display: flex;
@@ -400,7 +454,7 @@ textarea { resize: vertical; }
   :root { --menu-largura: 68px; }
   .menu__marca span, .menu__lista span, .menu__demo { display: none; }
   .menu__marca, .menu__lista a { justify-content: center; padding-inline: 0; }
-  .conteudo { padding-inline: 24px; }
+  .conteudo, .sessao { padding-inline: 24px; }
 }
 
 @media (max-width: 760px) {
@@ -428,7 +482,9 @@ textarea { resize: vertical; }
 
   .menu__lista span { display: block; }
 
-  .conteudo { padding: 18px 16px calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .conteudo { padding: 12px 16px calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .sessao { padding-inline: 16px; }
+  .login__cartao { padding: 22px 18px; }
   .topo__titulo { font-size: 22px; }
   .topo .btn { width: 100%; }
 

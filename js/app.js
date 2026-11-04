@@ -11,6 +11,11 @@
     cancelado: "Cancelado",
   };
 
+  const NIVEIS = {
+    master: "Admin master",
+    admin: "Admin tradicional",
+  };
+
   const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
   // ---------- Utilitários ----------
@@ -350,7 +355,7 @@
         avisar(agendamento ? "Agendamento atualizado." : "Agendamento criado.", "ok");
         renderizar();
       },
-      aoExcluir: agendamento
+      aoExcluir: agendamento && api.pode("excluir")
         ? async () => {
             if (!(await confirmar("Excluir este agendamento? Para manter o histórico, prefira mudar o status para Cancelado."))) return false;
             await api.agendamentos.remover(agendamento._id);
@@ -411,6 +416,36 @@
         { nome: "nome", rotulo: "Nome", obrigatorio: true },
         { nome: "cro", rotulo: "CRO", obrigatorio: true, dica: "CRO-SP 00000" },
         { nome: "especialidade", rotulo: "Especialidade", obrigatorio: true },
+      ],
+    },
+    usuarios: {
+      titulo: "Usuários",
+      singular: "usuário",
+      permissao: "gerenciar-usuarios",
+      busca: ["nome", "login"],
+      colunas: [
+        { campo: "nome", rotulo: "Nome" },
+        { campo: "login", rotulo: "Usuário" },
+        { campo: "nivel", rotulo: "Nível", formato: (v) => NIVEIS[v] ?? v },
+      ],
+      campos: [
+        { nome: "nome", rotulo: "Nome", obrigatorio: true },
+        { nome: "login", rotulo: "Usuário (para entrar no sistema)", obrigatorio: true, padrao: "[a-z0-9._\\-]+", dica: "letras minúsculas, sem espaços" },
+        {
+          nome: "nivel",
+          rotulo: "Nível",
+          tipo: "select",
+          opcoes: Object.entries(NIVEIS).map(([valor, rotulo]) => ({ valor, rotulo })),
+          padraoSelecao: "admin",
+        },
+        {
+          nome: "senha",
+          rotulo: "Senha temporária",
+          rotuloEdicao: "Nova senha temporária (em branco mantém a atual)",
+          tipo: "password",
+          obrigatorioAoCriar: true,
+          tamanhoMinimo: 8,
+        },
       ],
     },
   };
@@ -476,9 +511,13 @@
 
   function campoCadastro(campo, item) {
     const valor = item?.[campo.nome] ?? "";
-    const obrigatorio = campo.obrigatorio ? " required" : "";
+    const obrigatorio = campo.obrigatorio || (campo.obrigatorioAoCriar && !item) ? " required" : "";
+    const rotulo = (item && campo.rotuloEdicao) || campo.rotulo;
+    if (campo.tipo === "select") {
+      return campoSelecao(campo.nome, rotulo, campo.opcoes, valor || campo.padraoSelecao);
+    }
     if (campo.tipo === "textarea") {
-      return `<label class="campo"><span>${esc(campo.rotulo)}</span>
+      return `<label class="campo"><span>${esc(rotulo)}</span>
         <textarea name="${campo.nome}" rows="3"${obrigatorio}>${esc(valor)}</textarea></label>`;
     }
     const extras = [
@@ -486,9 +525,16 @@
       campo.dica ? `placeholder="${esc(campo.dica)}"` : "",
       campo.min !== undefined ? `min="${campo.min}"` : "",
       campo.passo !== undefined ? `step="${campo.passo}"` : "",
+      campo.tamanhoMinimo ? `minlength="${campo.tamanhoMinimo}"` : "",
+      campo.tipo === "password" ? `autocomplete="new-password"` : "",
     ].join(" ");
-    return `<label class="campo"><span>${esc(campo.rotulo)}</span>
+    return `<label class="campo"><span>${esc(rotulo)}</span>
       <input type="${campo.tipo ?? "text"}" name="${campo.nome}" value="${esc(valor)}"${obrigatorio} ${extras}></label>`;
+  }
+
+  function podeExcluir(rota, item) {
+    if (!item || !api.pode("excluir")) return false;
+    return !(rota === "usuarios" && item._id === usuarioLogado._id);
   }
 
   function abrirRegistro(rota, item) {
@@ -499,15 +545,20 @@
       async aoSalvar(dados) {
         const registro = {};
         for (const campo of config.campos) {
+          if (campo.tipo === "password") {
+            if (dados.get(campo.nome)) registro[campo.nome] = dados.get(campo.nome);
+            continue;
+          }
           const valor = dados.get(campo.nome).trim();
           registro[campo.nome] = campo.tipo === "number" ? Number(valor) : valor;
         }
         if (item) await api[rota].atualizar(item._id, registro);
         else await api[rota].criar(registro);
+        if (rota === "usuarios") mostrarSessao(await api.auth.usuarioAtual());
         avisar("Cadastro salvo.", "ok");
         renderizar();
       },
-      aoExcluir: item
+      aoExcluir: podeExcluir(rota, item)
         ? async () => {
             if (!(await confirmar(`Excluir ${item.nome}? Esta ação não pode ser desfeita.`))) return false;
             await api[rota].remover(item._id);
@@ -525,7 +576,8 @@
 
   function rotaAtual() {
     const rota = location.hash.replace("#/", "");
-    return rota in CADASTROS ? rota : "agenda";
+    const config = CADASTROS[rota];
+    return config && (!config.permissao || api.pode(config.permissao)) ? rota : "agenda";
   }
 
   async function renderizar() {
@@ -556,6 +608,112 @@
       </div>`;
     }
   }
+
+  // ---------- Acesso ----------
+
+  let usuarioLogado = null;
+
+  function mostrarSessao(usuario) {
+    usuarioLogado = usuario;
+    $("sessao-nome").textContent = usuario.nome;
+    $("sessao-nivel").textContent = NIVEIS[usuario.nivel] ?? usuario.nivel;
+    document.querySelectorAll("[data-permissao]").forEach((elemento) => {
+      elemento.hidden = !api.pode(elemento.dataset.permissao);
+    });
+  }
+
+  function entrarNoApp(usuario) {
+    mostrarSessao(usuario);
+    $("login").hidden = true;
+    $("app").hidden = false;
+    renderizar();
+  }
+
+  function mostrarAcesso(formulario) {
+    usuarioLogado = null;
+    [modal, $("confirmacao")].forEach((dialogo) => {
+      if (dialogo.open) dialogo.close();
+    });
+    $("app").hidden = true;
+    // Descarta renderizações em andamento para nada voltar à tela depois de sair.
+    ultimaRenderizacao++;
+    $("conteudo").innerHTML = "";
+    rotaExibida = "";
+    $("login").hidden = false;
+    $("login-erro").hidden = true;
+    ["login-form", "troca-form"].forEach((id) => {
+      $(id).reset();
+      $(id).hidden = id !== formulario;
+    });
+    $(formulario).querySelector("input").focus();
+  }
+
+  function seguir(usuario) {
+    if (usuario.trocarSenha) mostrarAcesso("troca-form");
+    else entrarNoApp(usuario);
+  }
+
+  function camposSenha() {
+    return `
+      <label class="campo"><span>Senha atual</span>
+        <input type="password" name="senhaAtual" required autocomplete="current-password"></label>
+      <label class="campo"><span>Nova senha (mínimo de 8 caracteres)</span>
+        <input type="password" name="novaSenha" required minlength="8" autocomplete="new-password"></label>
+      <label class="campo"><span>Repita a nova senha</span>
+        <input type="password" name="confirmacao" required minlength="8" autocomplete="new-password"></label>
+    `;
+  }
+
+  function trocarSenha(dados) {
+    const nova = dados.get("novaSenha");
+    if (nova !== dados.get("confirmacao")) throw new Error("As duas senhas novas não são iguais.");
+    if (nova === dados.get("senhaAtual")) throw new Error("A nova senha precisa ser diferente da atual.");
+    return api.auth.trocarSenha(dados.get("senhaAtual"), nova);
+  }
+
+  function aoEnviarAcesso(formulario, acao) {
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const botao = formulario.querySelector("[type=submit]");
+      botao.disabled = true;
+      $("login-erro").hidden = true;
+      try {
+        seguir(await acao(new FormData(formulario)));
+      } catch (erro) {
+        $("login-erro").textContent = erro.message;
+        $("login-erro").hidden = false;
+      } finally {
+        botao.disabled = false;
+      }
+    });
+  }
+
+  function sair() {
+    api.auth.sair();
+    mostrarAcesso("login-form");
+  }
+
+  $("troca-campos").innerHTML = camposSenha();
+  aoEnviarAcesso($("login-form"), (dados) => api.auth.entrar(dados.get("login"), dados.get("senha")));
+  aoEnviarAcesso($("troca-form"), trocarSenha);
+  $("troca-sair").addEventListener("click", sair);
+  $("sair").addEventListener("click", sair);
+
+  $("alterar-senha").addEventListener("click", () => {
+    abrirModal({
+      titulo: "Alterar senha",
+      corpo: camposSenha(),
+      async aoSalvar(dados) {
+        await trocarSenha(dados);
+        avisar("Senha alterada.", "ok");
+      },
+    });
+  });
+
+  window.addEventListener("sessao-expirada", () => {
+    mostrarAcesso("login-form");
+    avisar("Sua sessão expirou. Entre novamente.", "erro");
+  });
 
   // ---------- Eventos ----------
 
@@ -628,10 +786,13 @@
     $("cadastro-linhas").innerHTML = linhasCadastro(config, filtrarCadastro(config, evento.target.value));
   });
 
-  window.addEventListener("hashchange", renderizar);
+  window.addEventListener("hashchange", () => {
+    if (usuarioLogado) renderizar();
+  });
 
   if (api.modoDemo) {
     $("aviso-demo").hidden = false;
+    $("login-demo").hidden = false;
     $("redefinir-demo").addEventListener("click", () => {
       api.restaurarDemo();
       avisar("Dados de demonstração restaurados.", "ok");
@@ -639,5 +800,16 @@
     });
   }
 
-  renderizar();
+  async function iniciar() {
+    let usuario = null;
+    try {
+      usuario = await api.auth.usuarioAtual();
+    } catch {
+      // Sem conexão ou sessão inválida: quem decide é a tela de login.
+    }
+    if (usuario) seguir(usuario);
+    else mostrarAcesso("login-form");
+  }
+
+  iniciar();
 })();

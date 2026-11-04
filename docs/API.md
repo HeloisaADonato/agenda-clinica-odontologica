@@ -27,7 +27,7 @@ API_BASE_URL: "http://localhost:3000/api",
 
 ## Endpoints
 
-Os quatro recursos (`pacientes`, `dentistas`, `procedimentos`, `agendamentos`) usam o mesmo formato:
+Os cinco recursos (`pacientes`, `dentistas`, `procedimentos`, `agendamentos`, `usuarios`) usam o mesmo formato:
 
 | Método | Rota | Corpo | Sucesso |
 | --- | --- | --- | --- |
@@ -42,6 +42,37 @@ Os quatro recursos (`pacientes`, `dentistas`, `procedimentos`, `agendamentos`) u
 | --- | --- |
 | `de` | ISO 8601. Retorna agendamentos com `inicio >= de` |
 | `ate` | ISO 8601. Retorna agendamentos com `inicio < ate` |
+
+## Autenticação
+
+Todas as rotas exigem login, menos `POST /auth/login`. O front envia o token em todas as chamadas:
+
+```
+Authorization: Bearer <token>
+```
+
+| Método | Rota | Corpo | Sucesso |
+| --- | --- | --- | --- |
+| POST | `/auth/login` | `{ "login", "senha" }` | `200` com `{ "token", "usuario" }` |
+| GET | `/auth/eu` | | `200` com o usuário logado |
+| PUT | `/auth/senha` | `{ "senhaAtual", "novaSenha" }` | `204` sem corpo |
+
+O objeto `usuario` traz `_id`, `nome`, `login`, `nivel` e `trocarSenha`, nunca a senha nem o hash.
+
+Um `401` com token enviado faz o front encerrar a sessão e voltar ao login. Por isso, senha atual incorreta em `PUT /auth/senha` responde `400`, não `401`.
+
+## Níveis de acesso
+
+| Ação | `master` | `admin` |
+| --- | --- | --- |
+| Ver agenda e cadastros | sim | sim |
+| Criar e editar agendamentos, inclusive cancelar | sim | sim |
+| Criar e editar pacientes, procedimentos e dentistas | sim | sim |
+| Alterar a própria senha | sim | sim |
+| Excluir agendamentos e cadastros (`DELETE`) | sim | não, `403` |
+| Qualquer rota de `/usuarios` | sim | não, `403` |
+
+Esconder um botão no front não protege nada. Cada rota precisa conferir o nível no servidor, usando o usuário do token, nunca um nível enviado pelo navegador.
 
 ## Coleções
 
@@ -86,6 +117,27 @@ Os quatro recursos (`pacientes`, `dentistas`, `procedimentos`, `agendamentos`) u
 
 Os IDs voltam como strings simples, sem `populate`. O front cruza os dados com as listas de pacientes, dentistas e procedimentos.
 
+### usuarios
+
+| Campo | Tipo | Obrigatório | Observação |
+| --- | --- | --- | --- |
+| `nome` | string | sim | |
+| `login` | string | sim | único, minúsculo |
+| `nivel` | string | sim | `master` ou `admin` |
+| `senha` | string | ao criar | só na entrada: salve apenas o hash e nunca devolva este campo. No `PUT`, ausente mantém a senha atual |
+| `trocarSenha` | boolean | | definido pelo servidor: `true` ao criar ou redefinir a senha, `false` depois de `PUT /auth/senha` |
+
+Usuários iniciais a criar no banco, cada um com uma senha temporária gerada no servidor:
+
+| `nome` | `login` | `nivel` |
+| --- | --- | --- |
+| Heloisa Arfelli Donato | `heloisa` | `master` |
+| Sabrina Arfelli | `sabrina` | `admin` |
+| Gabriel | `gabriel` | `admin` |
+| Thiago | `thiago` | `admin` |
+| Guilherme | `guilherme` | `admin` |
+| Isabela | `isabela` | `admin` |
+
 ## Regras de negócio que o back-end precisa garantir
 
 O front valida o básico, mas estas regras precisam existir no servidor. O modo demonstração já se comporta assim, então dá para usá-lo como referência.
@@ -96,9 +148,22 @@ O front valida o básico, mas estas regras precisam existir no servidor. O modo 
 | Excluir paciente, dentista ou procedimento com agendamento não cancelado | `409` |
 | Registro inexistente | `404` |
 | Campo obrigatório ausente ou inválido | `400` |
+| Sem token, token inválido ou expirado, login ou senha incorretos | `401` |
+| Nível sem permissão para a ação | `403` |
+| Usuário com `trocarSenha: true` em qualquer rota além de `/auth/eu` e `/auth/senha` | `403` |
+| `login` repetido | `409` |
+| Excluir o próprio usuário ou rebaixar o último `master` | `409` |
 
 Dois agendamentos se sobrepõem quando `a.inicio < b.fim` e `a.fim > b.inicio`. Um agendamento que termina às 10:00 não conflita com outro que começa às 10:00.
 
 ## Segurança
 
-O protótipo ainda não tem login. Como o sistema guarda dados pessoais e de saúde, protegidos pela LGPD, a API não deve ir para um endereço público sem autenticação. Quando o login for definido, o cabeçalho de autenticação entra na função `requisitar` de [js/api.js](../js/api.js).
+O login do modo demonstração roda no navegador e serve para testar as telas: quem abre as ferramentas do navegador consegue contorná-lo. A proteção real depende do back-end. Como o sistema guarda dados pessoais e de saúde, protegidos pela LGPD, a API só pode ir para um endereço público com estes pontos prontos:
+
+- Senhas salvas com bcrypt ou argon2.
+- Token assinado, com validade curta, e chave guardada no `.env`.
+- Limite de tentativas em `POST /auth/login`.
+- HTTPS.
+- Níveis conferidos em cada rota, conforme a tabela de níveis de acesso.
+
+Os hashes de [js/usuarios-demo.js](../js/usuarios-demo.js) são só da demonstração e não devem ser importados para o banco.
