@@ -109,9 +109,8 @@
       return usuarioLogado;
     },
     async trocarSenha(senhaAtual, novaSenha) {
-      await requisitar("PUT", "/auth/senha", { senhaAtual, novaSenha });
-      usuarioLogado = { ...usuarioLogado, trocarSenha: false };
-      return usuarioLogado;
+      const resposta = await requisitar("PUT", "/auth/senha", { senhaAtual, novaSenha });
+      return abrirSessao(resposta.token, resposta.usuario);
     },
   };
 

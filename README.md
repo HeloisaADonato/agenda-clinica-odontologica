@@ -27,16 +27,25 @@ Protótipo do front-end para gerenciar agendamentos de procedimentos de uma clí
 
 Abra o `index.html` no navegador. Por padrão o site usa o **modo demonstração**: os dados são fictícios e ficam salvos apenas no navegador de quem está testando, inclusive as senhas alteradas.
 
-Neste modo o login roda no navegador e não protege dados de verdade. A proteção real vem do back-end.
+Neste modo o login roda no navegador e não protege dados de verdade. A proteção real vem da API.
 
 No VS Code, a extensão Live Server recarrega a página a cada alteração.
 
-## Para quem vai fazer o back-end
+## Back-end
 
-1. Implemente a API seguindo o contrato em [docs/API.md](docs/API.md).
-2. Em [js/config.js](js/config.js), troque `USE_MOCK` para `false` e ajuste `API_BASE_URL`.
+A API fica em [server/](server/), feita com Node.js, Express e MongoDB, seguindo o contrato de [docs/API.md](docs/API.md). Para publicar o banco e a API, siga [docs/PUBLICAR.md](docs/PUBLICAR.md).
 
-Toda a comunicação com o servidor fica em [js/api.js](js/api.js). As telas não precisam mudar.
+Comandos, dentro da pasta `server`:
+
+```
+npm install
+npm test           Roda os testes com um MongoDB temporário
+npm run seed       Cria índices e usuários iniciais no banco do .env
+npm run seed:demo  Faz o mesmo e adiciona dados fictícios
+npm start          Sobe a API
+```
+
+Toda a comunicação do site com o servidor fica em [js/api.js](js/api.js), e a escolha entre modo demonstração e API real fica em [js/config.js](js/config.js).
 
 ## Estrutura
 
@@ -48,7 +57,10 @@ js/api.js         Comunicação com o back-end e modo demonstração
 js/mock-data.js   Dados fictícios
 js/usuarios-demo.js  Usuários do modo demonstração (somente hashes)
 js/app.js         Telas e interações
-docs/API.md       Contrato da API para o back-end
+docs/API.md       Contrato da API
+docs/PUBLICAR.md  Como publicar o banco e a API
+server/           API em Node.js com MongoDB
+render.yaml       Configuração de publicação no Render
 ```
 
 ## Cuidados

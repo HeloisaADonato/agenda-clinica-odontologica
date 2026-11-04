@@ -1,6 +1,6 @@
 # Contrato da API
 
-Este documento descreve o que o front-end espera do back-end. Se algum endpoint precisar mudar, a única parte do front que precisa de ajuste é [js/api.js](../js/api.js).
+Este documento descreve o contrato entre o front-end e o back-end, que está implementado em [server/](../server/). Se algum endpoint precisar mudar, a única parte do front que precisa de ajuste é [js/api.js](../js/api.js). O passo a passo de publicação está em [PUBLICAR.md](PUBLICAR.md).
 
 ## Como ligar o front ao back-end
 
@@ -55,9 +55,11 @@ Authorization: Bearer <token>
 | --- | --- | --- | --- |
 | POST | `/auth/login` | `{ "login", "senha" }` | `200` com `{ "token", "usuario" }` |
 | GET | `/auth/eu` | | `200` com o usuário logado |
-| PUT | `/auth/senha` | `{ "senhaAtual", "novaSenha" }` | `204` sem corpo |
+| PUT | `/auth/senha` | `{ "senhaAtual", "novaSenha" }` | `200` com `{ "token", "usuario" }` |
 
 O objeto `usuario` traz `_id`, `nome`, `login`, `nivel` e `trocarSenha`, nunca a senha nem o hash.
+
+Trocar ou redefinir a senha invalida os tokens anteriores do usuário. Por isso `PUT /auth/senha` devolve um token novo.
 
 Um `401` com token enviado faz o front encerrar a sessão e voltar ao login. Por isso, senha atual incorreta em `PUT /auth/senha` responde `400`, não `401`.
 
@@ -127,7 +129,7 @@ Os IDs voltam como strings simples, sem `populate`. O front cruza os dados com a
 | `senha` | string | ao criar | só na entrada: salve apenas o hash e nunca devolva este campo. No `PUT`, ausente mantém a senha atual |
 | `trocarSenha` | boolean | | definido pelo servidor: `true` ao criar ou redefinir a senha, `false` depois de `PUT /auth/senha` |
 
-Usuários iniciais a criar no banco, cada um com uma senha temporária gerada no servidor:
+Usuários iniciais, criados por `npm run seed` com uma senha temporária aleatória para cada um:
 
 | `nome` | `login` | `nivel` |
 | --- | --- | --- |
@@ -138,9 +140,9 @@ Usuários iniciais a criar no banco, cada um com uma senha temporária gerada no
 | Guilherme | `guilherme` | `admin` |
 | Isabela | `isabela` | `admin` |
 
-## Regras de negócio que o back-end precisa garantir
+## Regras de negócio garantidas pelo back-end
 
-O front valida o básico, mas estas regras precisam existir no servidor. O modo demonstração já se comporta assim, então dá para usá-lo como referência.
+O front valida o básico, mas estas regras valem no servidor. O modo demonstração se comporta do mesmo jeito.
 
 | Situação | Resposta |
 | --- | --- |
@@ -156,14 +158,18 @@ O front valida o básico, mas estas regras precisam existir no servidor. O modo 
 
 Dois agendamentos se sobrepõem quando `a.inicio < b.fim` e `a.fim > b.inicio`. Um agendamento que termina às 10:00 não conflita com outro que começa às 10:00.
 
+A conferência de horário roda em uma transação do MongoDB, que precisa de um replica set. O Atlas já funciona assim, mas um `mongod` simples instalado na máquina não aceita transações.
+
 ## Segurança
 
-O login do modo demonstração roda no navegador e serve para testar as telas: quem abre as ferramentas do navegador consegue contorná-lo. A proteção real depende do back-end. Como o sistema guarda dados pessoais e de saúde, protegidos pela LGPD, a API só pode ir para um endereço público com estes pontos prontos:
+O login do modo demonstração roda no navegador e serve para testar as telas: quem abre as ferramentas do navegador consegue contorná-lo. A proteção real vem do back-end, que já faz o seguinte:
 
-- Senhas salvas com bcrypt ou argon2.
-- Token assinado, com validade curta, e chave guardada no `.env`.
-- Limite de tentativas em `POST /auth/login`.
-- HTTPS.
-- Níveis conferidos em cada rota, conforme a tabela de níveis de acesso.
+- Salva senhas com bcrypt.
+- Emite tokens assinados que valem 8 horas, com a chave em `JWT_SECRET`.
+- Limita a 10 as tentativas de login erradas a cada 15 minutos por IP.
+- Confere o nível em cada rota, lendo o usuário do banco a cada chamada.
+- Aceita chamadas de navegador só das origens em `ORIGENS_PERMITIDAS`.
 
-Os hashes de [js/usuarios-demo.js](../js/usuarios-demo.js) são só da demonstração e não devem ser importados para o banco.
+A API em produção precisa estar em HTTPS, o que o Render já oferece. Como o sistema guarda dados pessoais e de saúde, protegidos pela LGPD, avaliem os requisitos da lei antes de cadastrar pacientes reais.
+
+Os hashes de [js/usuarios-demo.js](../js/usuarios-demo.js) são só da demonstração e não valem no banco real.

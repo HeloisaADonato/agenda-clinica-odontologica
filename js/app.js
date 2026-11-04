@@ -798,9 +798,14 @@
       avisar("Dados de demonstração restaurados.", "ok");
       renderizar();
     });
+  } else {
+    $("login-demo").textContent = "Se o site ficou um tempo sem uso, a primeira resposta pode levar cerca de um minuto.";
+    $("login-demo").hidden = false;
   }
 
   async function iniciar() {
+    // O servidor pode demorar a acordar: a tela de login aparece enquanto a sessão é conferida.
+    if (!api.modoDemo) mostrarAcesso("login-form");
     let usuario = null;
     try {
       usuario = await api.auth.usuarioAtual();

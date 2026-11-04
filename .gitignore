@@ -3,6 +3,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+senhas-iniciais.txt
 *.log
 .DS_Store
 Thumbs.db
