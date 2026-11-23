@@ -116,7 +116,8 @@
 
   // ---------- Modo demonstração: imita as regras do back-end ----------
 
-  const CHAVE_MOCK = "odonto:mock:v1";
+  // Mude a versão quando js/mock-data.js ganhar dados novos.
+  const CHAVE_MOCK = "odonto:mock:v2";
   // Mude a versão quando o formato de js/usuarios-demo.js mudar.
   const CHAVE_USUARIOS = "odonto:usuarios:v4";
   const REFERENCIAS = { pacientes: "pacienteId", dentistas: "dentistaId", procedimentos: "procedimentoId" };

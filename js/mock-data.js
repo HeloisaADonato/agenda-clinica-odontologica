@@ -49,6 +49,47 @@ window.criarDadosMock = function () {
     [2, 14, 30, "pac6", "den1", "pro5", "agendado"],
   ];
 
+  // Mais agendamentos nos dias úteis ao redor, para a agenda parecer em uso. O sorteio
+  // tem semente fixa, então "Restaurar dados" recria sempre a mesma agenda.
+  let semente = 20261123;
+  const sortear = () => {
+    semente = (semente * 1103515245 + 12345) % 2147483648;
+    return semente / 2147483648;
+  };
+  const escolher = (lista) => lista[Math.floor(sortear() * lista.length)];
+  const diasFixos = new Set(grade.map(([dias]) => dias));
+
+  for (let dias = -10; dias <= 15; dias++) {
+    const dia = new Date();
+    dia.setDate(dia.getDate() + dias);
+    if (diasFixos.has(dias) || dia.getDay() === 0 || dia.getDay() === 6) continue;
+
+    const ocupados = new Map(); // paciente -> intervalos do dia, para ninguém estar em dois lugares
+    for (const dentista of dentistas) {
+      let minuto = 8 * 60 + escolher([0, 30, 60]);
+      while (true) {
+        const procedimento = escolher(procedimentos);
+        const fim = minuto + procedimento.duracaoMin;
+        if (fim > 19 * 60) break;
+        if (minuto < 13 * 60 && fim > 12 * 60) {
+          minuto = 13 * 60; // horário de almoço
+          continue;
+        }
+        const livre = pacientes.filter((p) => !(ocupados.get(p._id) ?? []).some(([a, b]) => a < fim && b > minuto));
+        if (livre.length) {
+          const paciente = escolher(livre);
+          ocupados.set(paciente._id, [...(ocupados.get(paciente._id) ?? []), [minuto, fim]]);
+          const sorteio = sortear();
+          const status = dias < 0
+            ? (sorteio < 0.85 ? "concluido" : "cancelado")
+            : sorteio < 0.6 ? "agendado" : sorteio < 0.9 ? "confirmado" : "cancelado";
+          grade.push([dias, Math.floor(minuto / 60), minuto % 60, paciente._id, dentista._id, procedimento._id, status]);
+        }
+        minuto = Math.ceil((fim + escolher([0, 0, 15, 30, 60, 90])) / 15) * 15;
+      }
+    }
+  }
+
   const agendamentos = grade.map(([dias, hora, minuto, pacienteId, dentistaId, procedimentoId, status], i) => {
     const inicio = new Date();
     inicio.setDate(inicio.getDate() + dias);
