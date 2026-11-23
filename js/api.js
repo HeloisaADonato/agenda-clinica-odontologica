@@ -117,7 +117,7 @@
   // ---------- Modo demonstração: imita as regras do back-end ----------
 
   const CHAVE_MOCK = "odonto:mock:v1";
-  const CHAVE_USUARIOS = "odonto:usuarios:v1";
+  const CHAVE_USUARIOS = "odonto:usuarios:v2";
   const ITERACOES_HASH = 600000;
   const REFERENCIAS = { pacientes: "pacienteId", dentistas: "dentistaId", procedimentos: "procedimentoId" };
 
