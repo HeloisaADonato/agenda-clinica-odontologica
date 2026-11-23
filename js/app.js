@@ -438,14 +438,19 @@
           opcoes: Object.entries(NIVEIS).map(([valor, rotulo]) => ({ valor, rotulo })),
           padraoSelecao: "admin",
         },
-        {
-          nome: "senha",
-          rotulo: "Senha temporária",
-          rotuloEdicao: "Nova senha temporária (em branco mantém a atual)",
-          tipo: "password",
-          obrigatorioAoCriar: true,
-          tamanhoMinimo: 8,
-        },
+        // O modo demonstração não usa senha.
+        ...(api.modoDemo
+          ? []
+          : [
+              {
+                nome: "senha",
+                rotulo: "Senha temporária",
+                rotuloEdicao: "Nova senha temporária (em branco mantém a atual)",
+                tipo: "password",
+                obrigatorioAoCriar: true,
+                tamanhoMinimo: 8,
+              },
+            ]),
       ],
     },
   };
@@ -645,7 +650,22 @@
       $(id).reset();
       $(id).hidden = id !== formulario;
     });
-    $(formulario).querySelector("input").focus();
+    if (api.modoDemo) listarQuemEntra();
+    $(formulario).querySelector("input, select").focus();
+  }
+
+  // No modo demonstração não há senha: cada pessoa escolhe o próprio nome.
+  function listarQuemEntra() {
+    const opcoes = api.auth
+      .usuariosParaEntrar()
+      .map((u) => `<option value="${esc(u.login)}">${esc(u.nome)}</option>`)
+      .join("");
+    $("campo-login").innerHTML = `<span>Quem está entrando</span><select name="login" required>${opcoes}</select>`;
+  }
+
+  if (api.modoDemo) {
+    $("campo-senha").remove();
+    $("alterar-senha").hidden = true;
   }
 
   function seguir(usuario) {

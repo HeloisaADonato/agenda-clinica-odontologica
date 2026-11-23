@@ -162,7 +162,7 @@ A conferência de horário roda em uma transação do MongoDB, que precisa de um
 
 ## Segurança
 
-O login do modo demonstração roda no navegador e serve para testar as telas: quem abre as ferramentas do navegador consegue contorná-lo. A proteção real vem do back-end, que já faz o seguinte:
+O modo demonstração não usa senha: cada pessoa entra escolhendo o próprio nome, e serve só para testar as telas. A proteção real vem do back-end, que exige senha e já faz o seguinte:
 
 - Salva senhas com bcrypt.
 - Emite tokens assinados que valem 8 horas, com a chave em `JWT_SECRET`.
@@ -171,5 +171,3 @@ O login do modo demonstração roda no navegador e serve para testar as telas: q
 - Aceita chamadas de navegador só das origens em `ORIGENS_PERMITIDAS`.
 
 A API em produção precisa estar em HTTPS, o que o Render já oferece. Como o sistema guarda dados pessoais e de saúde, protegidos pela LGPD, avaliem os requisitos da lei antes de cadastrar pacientes reais.
-
-Os hashes de [js/usuarios-demo.js](../js/usuarios-demo.js) são só da demonstração e não valem no banco real.

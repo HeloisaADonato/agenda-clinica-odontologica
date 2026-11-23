@@ -11,7 +11,7 @@ Protótipo do front-end para gerenciar agendamentos de procedimentos de uma clí
 - Bloqueio de dois agendamentos no mesmo horário para o mesmo dentista
 - Filtros por data, dentista e status
 - Cadastros de pacientes, procedimentos e dentistas, com busca
-- Login com senha, troca obrigatória da senha temporária e dois níveis de acesso
+- Dois níveis de acesso. No modo demonstração cada pessoa entra escolhendo o próprio nome, sem senha; com a API real o login exige senha, com troca obrigatória da senha temporária
 
 ## Níveis de acesso
 
@@ -27,7 +27,7 @@ Protótipo do front-end para gerenciar agendamentos de procedimentos de uma clí
 
 Abra o `index.html` no navegador. Por padrão o site usa o **modo demonstração**: os dados são fictícios e ficam salvos apenas no navegador de quem está testando, inclusive as senhas alteradas.
 
-Neste modo o login roda no navegador e não protege dados de verdade. A proteção real vem da API.
+Neste modo não há senha: qualquer pessoa com o link pode entrar com qualquer nome, inclusive como admin master. Por isso ele serve só para testar as telas. A proteção real vem da API.
 
 No VS Code, a extensão Live Server recarrega a página a cada alteração.
 
@@ -55,7 +55,7 @@ css/styles.css    Estilos e regras responsivas
 js/config.js      Configuração (modo demonstração, URL da API, horário da clínica)
 js/api.js         Comunicação com o back-end e modo demonstração
 js/mock-data.js   Dados fictícios
-js/usuarios-demo.js  Usuários do modo demonstração (somente hashes)
+js/usuarios-demo.js  Usuários do modo demonstração
 js/app.js         Telas e interações
 docs/API.md       Contrato da API
 docs/PUBLICAR.md  Como publicar o banco e a API

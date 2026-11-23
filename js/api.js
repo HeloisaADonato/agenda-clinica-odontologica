@@ -117,8 +117,8 @@
   // ---------- Modo demonstração: imita as regras do back-end ----------
 
   const CHAVE_MOCK = "odonto:mock:v1";
-  const CHAVE_USUARIOS = "odonto:usuarios:v2";
-  const ITERACOES_HASH = 600000;
+  // Mude a versão quando o formato de js/usuarios-demo.js mudar.
+  const CHAVE_USUARIOS = "odonto:usuarios:v4";
   const REFERENCIAS = { pacientes: "pacienteId", dentistas: "dentistaId", procedimentos: "procedimentoId" };
 
   function carregarMock() {
@@ -163,29 +163,6 @@
   const copiar = (valor) => JSON.parse(JSON.stringify(valor));
   const esperar = () => new Promise((resolver) => setTimeout(resolver, 120));
   const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  const paraBase64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)));
-  const deBase64 = (texto) => Uint8Array.from(atob(texto), (c) => c.charCodeAt(0));
-
-  function semSenha({ senha, ...usuario }) {
-    return copiar(usuario);
-  }
-
-  async function derivarHash(senha, sal, iteracoes) {
-    if (!crypto.subtle) throw new ApiError("Abra o site por https ou localhost para usar o login.", 0);
-    const chave = await crypto.subtle.importKey("raw", new TextEncoder().encode(senha), "PBKDF2", false, ["deriveBits"]);
-    const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: sal, iterations: iteracoes }, chave, 256);
-    return paraBase64(bits);
-  }
-
-  async function gerarHash(senha) {
-    const sal = crypto.getRandomValues(new Uint8Array(16));
-    return `pbkdf2$${ITERACOES_HASH}$${paraBase64(sal)}$${await derivarHash(senha, sal, ITERACOES_HASH)}`;
-  }
-
-  async function senhaConfere(senha, salvo) {
-    const [, iteracoes, sal, hash] = salvo.split("$");
-    return (await derivarHash(senha, deBase64(sal), Number(iteracoes))) === hash;
-  }
 
   // Equivale ao middleware de autenticação do back-end: confere sessão e nível.
   function exigir(permissao) {
@@ -282,16 +259,16 @@
       async listar() {
         await esperar();
         exigir("gerenciar-usuarios");
-        return usuarios.map(semSenha);
+        return copiar(usuarios);
       },
       async criar({ senha, ...dados }) {
         await esperar();
         exigir("gerenciar-usuarios");
         validarLogin(dados.login);
-        const item = { ...copiar(dados), _id: novoId(), senha: await gerarHash(senha), trocarSenha: true };
+        const item = { ...copiar(dados), _id: novoId(), trocarSenha: false };
         usuarios.push(item);
         salvarUsuarios();
-        return semSenha(item);
+        return copiar(item);
       },
       async atualizar(id, { senha, ...dados }) {
         await esperar();
@@ -303,12 +280,8 @@
           throw new ApiError("O sistema precisa de pelo menos um admin master.", 409);
         }
         Object.assign(item, copiar(dados));
-        if (senha) {
-          item.senha = await gerarHash(senha);
-          item.trocarSenha = true;
-        }
         salvarUsuarios();
-        return semSenha(item);
+        return copiar(item);
       },
       async remover(id) {
         await esperar();
@@ -322,32 +295,20 @@
     };
   }
 
+  // Sem senha no modo demonstração: basta escolher um dos usuários cadastrados.
   const authMock = {
-    async entrar(login, senha) {
+    usuariosParaEntrar() {
+      return usuarios.map(({ login, nome }) => ({ login, nome })).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    },
+    async entrar(login) {
       await esperar();
-      const usuario = usuarios.find((u) => u.login === login.trim().toLowerCase());
-      if (!usuario || !(await senhaConfere(senha, usuario.senha))) {
-        throw new ApiError("Usuário ou senha incorretos.", 401);
-      }
-      return abrirSessao(usuario._id, semSenha(usuario));
+      const usuario = usuarios.find((u) => u.login === login);
+      if (!usuario) throw new ApiError("Usuário não encontrado.", 401);
+      return abrirSessao(usuario._id, copiar(usuario));
     },
     async usuarioAtual() {
       const usuario = usuarios.find((u) => u._id === token);
-      usuarioLogado = usuario ? semSenha(usuario) : null;
-      return usuarioLogado;
-    },
-    async trocarSenha(senhaAtual, novaSenha) {
-      await esperar();
-      const usuario = usuarios.find((u) => u._id === token);
-      if (!usuario) {
-        sessaoExpirada();
-        throw new ApiError("Sua sessão expirou. Entre novamente.", 401);
-      }
-      if (!(await senhaConfere(senhaAtual, usuario.senha))) throw new ApiError("A senha atual está incorreta.", 400);
-      usuario.senha = await gerarHash(novaSenha);
-      usuario.trocarSenha = false;
-      salvarUsuarios();
-      usuarioLogado = semSenha(usuario);
+      usuarioLogado = usuario ? copiar(usuario) : null;
       return usuarioLogado;
     },
   };
